@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Smart Image Finder</title>
+
+    <!-- Bootstrap Icons -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css"
+    />
+    <!-- Google Fonts -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="index.css" />
+  </head>
+
+  <body>
+    <!-- Window Chrome -->
+    <div class="window-chrome">
+      <div class="window-title">
+        <i class="bi bi-search"></i>
+        Smart Image Finder
+      </div>
+      <div class="window-controls">
+        <div class="window-control close" onclick="closeApp()"></div>
+        <div class="window-control minimize" onclick="minimizeApp()"></div>
+        <div class="window-control maximize" onclick="maximizeApp()"></div>
+      </div>
+    </div>
+
+    <!-- Main App Container -->
+    <div class="app-container">
+      <!-- Toolbar -->
+      <div class="toolbar">
+        <div class="toolbar-group">
+          <button class="toolbar-button primary" id="addFolderBtn">
+            <i class="bi bi-folder-plus"></i>
+            Add Folder
+          </button>
+           <button class="toolbar-button primary" id="addFilesBtn">
+            <i class="bi bi-folder-plus"></i>
+            Add Images
+          </button>
+          <button class="toolbar-button" id="refreshBtn">
+            <i class="bi bi-arrow-clockwise"></i>
+            Refresh
+          </button>
+        </div>
+
+        <div class="toolbar-separator"></div>
+
+        <div class="toolbar-group">
+          <button class="toolbar-button semantic" id="semanticSearchBtn">
+            <i class="bi bi-stars"></i>
+            AI Semantic Search
+          </button>
+        </div>
+
+        <div class="toolbar-separator"></div>
+
+        <div class="toolbar-group">
+          <button class="toolbar-button active" id="viewGridBtn">
+            <i class="bi bi-grid-3x3"></i>
+            Grid
+          </button>
+          <button class="toolbar-button" id="viewListBtn">
+            <i class="bi bi-list"></i>
+            List
+          </button>
+        </div>
+
+        <div class="toolbar-group">
+          <span class="toolbar-button" style="cursor: default">
+            <i class="bi bi-images"></i>
+            <span id="imageCount">0 images</span>
+          </span>
+        </div>
+      </div>
+
+      <!-- Content Area -->
+      <div class="content-area">
+        <!-- Sidebar -->
+        <div class="sidebar" id="sidebar">
+          <div class="sidebar-header">
+            <span class="sidebar-title">Search & Filters</span>
+            <button class="sidebar-toggle" id="sidebarToggle">
+              <i class="bi bi-chevron-left"></i>
+            </button>
+          </div>
+
+          <button class="sidebar-expand" id="sidebarExpand">
+            <i class="bi bi-chevron-right"></i>
+          </button>
+
+          <div class="sidebar-content">
+            <!-- Semantic Search Section -->
+            <div class="semantic-search-section">
+              <div class="semantic-search-header">
+                <div class="semantic-search-title">
+                  <i class="bi bi-stars"></i>
+                  AI Semantic Search
+                </div>
+              </div>
+
+              <div class="semantic-search-input-group">
+                <i class="bi bi-magic semantic-search-icon"></i>
+                <input
+                  type="text"
+                  class="semantic-search-input"
+                  id="semanticInput"
+                  placeholder="Describe what you're looking for..."
+                />
+
+                <!-- Search History Dropdown -->
+                <div class="search-history-dropdown" id="searchHistoryDropdown">
+                  <div class="search-history-header">
+                    <span class="search-history-title">Recent Searches</span>
+                    <button
+                      class="search-history-clear"
+                      id="clearSearchHistory"
+                    >
+                      Clear All
+                    </button>
+                  </div>
+                  <div id="searchHistoryItems">
+                    <div class="search-history-empty">No recent searches</div>
+                  </div>
+                </div>
+              </div>
+              <!-- Search Options -->
+              <div class="search-options">
+                <div class="k-selector-group">
+                  <label for="kSelector" class="k-selector-label">
+                    <i class="bi bi-images"></i> Results:
+                  </label>
+                  <select id="kSelector" class="k-selector">
+                    <option value="5">5 images</option>
+                    <option value="10" selected>10 images</option>
+                    <option value="15">15 images</option>
+                    <option value="20">20 images</option>
+                    <option value="25">25 images</option>
+                    <option value="50">50 images</option>
+                  </select>
+                </div>
+              </div>
+              <button class="semantic-search-button" id="semanticSearchButton">
+                <i class="bi bi-stars"></i>
+                Find Similar Images
+              </button>
+
+              <div class="semantic-examples">
+                <div class="semantic-examples-title">Try these examples:</div>
+                <div class="semantic-example-tags">
+                  <span
+                    class="semantic-example-tag"
+                    onclick="setSemanticQuery('sunset over mountains')"
+                    >sunset</span
+                  >
+                  <span
+                    class="semantic-example-tag"
+                    onclick="setSemanticQuery('people laughing')"
+                    >people</span
+                  >
+                  <span
+                    class="semantic-example-tag"
+                    onclick="setSemanticQuery('city skyline at night')"
+                    >city</span
+                  >
+                  <span
+                    class="semantic-example-tag"
+                    onclick="setSemanticQuery('flowers in garden')"
+                    >flowers</span
+                  >
+                  <span
+                    class="semantic-example-tag"
+                    onclick="setSemanticQuery('food on table')"
+                    >food</span
+                  >
+                  <span
+                    class="semantic-example-tag"
+                    onclick="setSemanticQuery('animals in nature')"
+                    >animals</span
+                  >
+                </div>
+              </div>
+            </div>
+
+            <!-- Search Section -->
+            <div class="search-section">
+              <div class="search-input-group">
+                <i class="bi bi-search search-icon"></i>
+                <input
+                  type="text"
+                  class="search-input"
+                  id="searchInput"
+                  placeholder="Search images..."
+                />
+              </div>
+            </div>
+
+            <!-- Search Type -->
+            <div class="filter-section">
+              <div class="filter-header" onclick="toggleFilterSection(this)">
+                <div class="filter-title">
+                  <i class="bi bi-magic"></i>
+                  Text Search Type
+                </div>
+                <i class="bi bi-chevron-down filter-chevron"></i>
+              </div>
+              <div class="filter-content">
+                <div class="search-tabs">
+                  <button class="search-tab active" data-type="caption">
+                    <i class="bi bi-chat-text"></i>
+                    Caption Search
+                  </button>
+                  <button class="search-tab" data-type="ocr">
+                    <i class="bi bi-type"></i>
+                    Text in Image
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Quick Filters -->
+            <div class="filter-section">
+              <div class="filter-header" onclick="toggleFilterSection(this)">
+                <div class="filter-title">
+                  <i class="bi bi-funnel"></i>
+                  Quick Filters
+                </div>
+                <i class="bi bi-chevron-down filter-chevron"></i>
+              </div>
+              <div class="filter-content">
+                <div class="filter-group">
+                  <label class="filter-checkbox">
+                    <input type="checkbox" id="favoritesOnly" />
+                    <i
+                      class="bi bi-heart-fill"
+                      style="color: var(--text-error)"
+                    ></i>
+                    Favorites Only
+                  </label>
+                </div>
+
+                <div class="filter-group">
+                  <label class="filter-label">File Type</label>
+                  <select class="filter-select" id="fileTypeFilter">
+                    <option value="">All Types</option>
+                    <option value="jpg">JPG</option>
+                    <option value="jpeg">JPEG</option>
+                    <option value="png">PNG</option>
+                    <option value="gif">GIF</option>
+                    <option value="bmp">BMP</option>
+                    <option value="webp">WebP</option>
+                  </select>
+                </div>
+                   <div class="filter-group">
+                  <label class="filter-label">Folder Name</label>
+                  <select class="filter-select" id="foldernameselector">
+                  <option value="">All Types</option>
+              
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <!-- Advanced Filters -->
+            <div class="filter-section">
+              <div class="filter-header" onclick="toggleFilterSection(this)">
+                <div class="filter-title">
+                  <i class="bi bi-sliders"></i>
+                  Advanced
+                </div>
+                <i class="bi bi-chevron-down filter-chevron"></i>
+              </div>
+              <div class="filter-content">
+                <div class="advanced-filters">
+                  <div class="filter-group">
+                    <label class="filter-label">Resolution</label>
+                    <div class="advanced-row">
+                      <select class="advanced-input" id="widthOp">
+                        <option value="">Width</option>
+                        <option value=">">&gt;</option>
+                        <option value="<">&lt;</option>
+                        <option value="=">=</option>
+                      </select>
+                      <input
+                        type="number"
+                        class="advanced-input"
+                        id="widthVal"
+                        placeholder="px"
+                      />
+                    </div>
+                    <div class="advanced-row">
+                      <select class="advanced-input" id="heightOp">
+                        <option value="">Height</option>
+                        <option value=">">&gt;</option>
+                        <option value="<">&lt;</option>
+                        <option value="=">=</option>
+                      </select>
+                      <input
+                        type="number"
+                        class="advanced-input"
+                        id="heightVal"
+                        placeholder="px"
+                      />
+                    </div>
+                  </div>
+
+                  <div class="filter-group">
+                    <label class="filter-label">File Size</label>
+                    <div class="advanced-row">
+                      <select class="advanced-input" id="sizeOp">
+                        <option value="">Size</option>
+                        <option value=">">&gt;</option>
+                        <option value="<">&lt;</option>
+                        <option value="=">=</option>
+                      </select>
+                      <input
+                        type="number"
+                        class="advanced-input"
+                        id="sizeVal"
+                        placeholder="MB"
+                        step="0.1"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Sort Options -->
+            <div class="filter-section">
+              <div class="filter-header" onclick="toggleFilterSection(this)">
+                <div class="filter-title">
+                  <i class="bi bi-sort-down"></i>
+                  Sort By
+                </div>
+                <i class="bi bi-chevron-down filter-chevron"></i>
+              </div>
+              <div class="filter-content">
+                <div class="filter-group">
+                  <select class="filter-select" id="sortBy">
+                    <option value="timestamp">Date Added</option>
+                    <option value="DateCreated">Date Created</option>
+                    <option value="DateModified">Date Modified</option>
+                    <option value="file_size">File Size</option>
+                    <option value="width">Width</option>
+                    <option value="height">Height</option>
+                  </select>
+                </div>
+                <div class="filter-group">
+                  <select class="filter-select" id="sortOrder">
+                    <option value="desc">Descending</option>
+                    <option value="asc">Ascending</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+
+<div class="filter-section">
+              <div class="filter-header" onclick="toggleFilterSection(this)">
+                <div class="filter-title">
+                  <i class="bi bi-sort-down"></i>
+                   Download Model And Modules
+                </div>
+                <i class="bi bi-chevron-down filter-chevron"></i>
+              </div>
+              <div class="filter-content">
+                <div class="filter-group">
+                 <label class="filter-checkbox">
+                    <input type="checkbox" id="loadModel" />
+                        Load Model
+                  </label>
+                </div>
+                  <div class="filter-group">
+                 <label class="filter-checkbox">
+                    <input type="checkbox" id="loadModule" />
+                        Load Module
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+          <!-- Welcome Screen -->
+          <div class="welcome-screen" id="welcomeScreen">
+            <div class="welcome-icon">
+              <i class="bi bi-images"></i>
+            </div>
+            <h1 class="welcome-title">Smart Image Finder</h1>
+            <p class="welcome-subtitle">
+              Organize, search, and discover your images with advanced
+              AI-powered features. Use semantic search to find images by
+              describing what you're looking for.
+            </p>
+            <div class="welcome-actions">
+              <button class="welcome-button" id="welcomeAddFolder">
+                <i class="bi bi-folder-plus"></i>
+                Add Image Folder
+              </button>
+              <button
+                class="welcome-button semantic"
+                id="welcomeSemanticSearch"
+              >
+                <i class="bi bi-stars"></i>
+                Try AI Search
+              </button>
+              <button class="welcome-button secondary" id="welcomeSearch">
+                <i class="bi bi-search"></i>
+                Search Existing
+              </button>
+            </div>
+          </div>
+
+          <!-- Content Header (hidden initially) -->
+          <div class="content-header hidden" id="contentHeader">
+            <div class="results-info">
+              <span class="results-count" id="resultsCount">0</span> images
+              found
+              <span
+                id="semanticResultsInfo"
+                class="hidden"
+                style="color: var(--semantic-primary); margin-left: 8px"
+              >
+                (AI Search Results)
+              </span>
+            </div>
+            <div class="view-controls">
+              <button class="view-button active" id="gridViewBtn">
+                <i class="bi bi-grid-3x3"></i>
+                Grid
+              </button>
+              <button class="view-button" id="listViewBtn">
+                <i class="bi bi-list"></i>
+                List
+              </button>
+            </div>
+          </div>
+
+          <!-- Image Container (hidden initially) -->
+          <div class="image-container hidden" id="imageContainer">
+            <div class="image-grid" id="imageGrid">
+              <!-- Images will be populated here -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Status Bar -->
+    <div class="status-bar">
+      <div class="status-left">
+        <div class="status-item" id="statusMessage">
+          <i class="bi bi-info-circle"></i>
+          Ready
+        </div>
+      </div>
+      <div class="status-right">
+        <div class="status-item" id="processingStatus" style="display: none">
+          <div class="loading-spinner"></div>
+          Processing...    <button class="btn btn-close-custom px-4" id="stopBtn">
+                <i class="fas fa-times me-2"></i>Stop
+              </button>
+          <div id="data">1</div>
+        </div>
+        <div
+          class="status-item"
+          id="semanticProcessingStatus"
+          style="display: none"
+        >
+          <div class="loading-spinner semantic-spinner"></div>
+          AI Searching...
+        </div>
+        <div class="status-item" id="selectedCount" style="display: none">
+          <i class="bi bi-check-square"></i>
+          <span>0 selected</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay hidden" id="loadingOverlay">
+      <div class="loading-content">
+        <div class="loading-spinner-large"></div>
+        <div class="loading-text" id="loadingText">Loading...</div>
+      </div>
+    </div>
+
+    <!-- Image Details Modal -->
+    <div class="image-details-modal hidden" id="imageDetailsModal">
+      <div class="image-details-content">
+        <div class="image-details-header">
+          <div class="image-details-title" id="imageDetailsTitle">
+            Image Details
+          </div>
+          <button class="image-details-close" id="imageDetailsClose">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+        <div class="image-details-body">
+          <div class="image-details-preview">
+            <img id="imageDetailsPreview" alt="Image preview" />
+          </div>
+          <div class="image-details-info" id="imageDetailsInfo">
+            <!-- Details will be populated here -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Context Menu -->
+    <div class="context-menu hidden" id="contextMenu">
+      <div class="context-menu-item" onclick="openImage()">
+        <i class="bi bi-eye"></i>
+        Open
+      </div>
+      <div class="context-menu-item" onclick="showImageDetails()">
+        <i class="bi bi-info-circle"></i>
+        Show Details
+      </div>
+      <div class="context-menu-item" onclick="toggleFavorite()">
+        <i class="bi bi-heart"></i>
+        Add to Favorites
+      </div>
+      <div class="context-menu-separator"></div>
+      <div class="context-menu-item" onclick="copyPath()">
+        <i class="bi bi-clipboard"></i>
+        Copy Path
+      </div>
+      <div class="context-menu-item" onclick="showInExplorer()">
+        <i class="bi bi-folder"></i>
+        Show in Explorer
+      </div>
+      <div class="context-menu-separator"></div>
+      <div class="context-menu-item" onclick="deleteImage()">
+        <i class="bi bi-trash"></i>
+        Delete
+      </div>
+    </div>
+
+    <div class="load element-none" id="loaderelement">
+      <div class="loader-card">
+        <div class="card-body p-4 text-center">
+          <!-- Loading State -->
+          <div id="loadingState">
+            <div class="loader-icon mb-3">
+              <i class="fas fa-download"></i>
+            </div>
+            <h5 class="loader-title mb-3">Loading AI Model</h5>
+            <div id="progresstext" class="mb-3">
+              <div class="model-name mb-2" id="modelName">
+                Preparing download...
+              </div>
+              <div class="progress-text mb-2" id="progressPercentage">0%</div>
+              <div class="progress-custom mb-2">
+                <div
+                  class="progress-bar-custom"
+                  id="progressBar"
+                  style="width: 0%"
+                ></div>
+              </div>
+              <div class="text-muted small status-text" id="statusText">
+                Initializing...
+              </div>
+            </div>
+            <div class="spinner-border spinner-border-custom" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+          </div>
+
+          <!-- Error State -->
+          <div id="errorState" class="element-none">
+            <div class="error-state mb-3">
+              <i class="fas fa-exclamation-triangle fa-3x"></i>
+            </div>
+            <h5 class="loader-title mb-3">Download Failed</h5>
+            <div class="error-message mb-3" id="errorMessage">
+              An error occurred while downloading the model. Please check your
+              internet connection and try again.
+            </div>
+            <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+              <button class="btn btn-retry px-4" id="retryBtn">
+                <i class="fas fa-redo me-2"></i>Retry
+              </button>
+              <button class="btn btn-close-custom px-4" id="closeBtn">
+                <i class="fas fa-times me-2"></i>Close
+              </button>
+            </div>
+          </div>
+
+          <!-- Success State -->
+          <div id="successState" class="element-none">
+            <div class="success-state mb-3">
+              <i class="fas fa-check-circle fa-3x"></i>
+            </div>
+            <h5 class="loader-title mb-3">Model Loaded Successfully!</h5>
+            <div class="success-message mb-3">
+              The AI model has been downloaded and is ready to use.
+            </div>
+          </div>
+          <div id="successStateModule" class="element-none">
+            <div class="success-state mb-3">
+              <i class="fas fa-check-circle fa-3x"></i>
+            </div>
+            <h5 class="loader-title mb-3">
+              All Modules Downloaded Successfully!
+            </h5>
+            <div class="success-message mb-3">
+              The modules has been downloaded and is ready to use.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="terminal-container hidden" id="terminal">
+      <div class="terminal-header">
+        <div class="terminal-title">Module Installation Terminal</div>
+      </div>
+      <div class="terminal-body" id="terminal-body">
+        <div class="terminal-line">
+          <span class="prompt">$</span> Starting module installation...<span
+            class="cursor"
+          ></span>
+        </div>
+      </div>
+    </div>
+  <!-- Folder Selection Modal -->
+<div id="folderModal" class="modal hidden">
+  <div class="modal-content">
+    <h2>In which folder do you want to store?</h2>
+    <input id="folderInput" list="folderSuggestions" placeholder="Type folder name..." />
+    <datalist id="folderSuggestions"></datalist>
+
+    <div class="modal-actions">
+      <button id="folderCancelBtn">Cancel</button>
+      <button id="folderOkBtn">OK</button>
+    </div>
+  </div>
+</div>
+
+
+    <script src="main.js"></script>
+  </body>
+</html>

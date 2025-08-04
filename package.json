@@ -1,0 +1,87 @@
+{
+  "name": "smart-image-finder",
+  "productName": "SMART LOCAL IMAGE FINDER",
+  "version": "1.0.0",
+  "description": "My Electron application description",
+  "main": "index.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "electron-forge start",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder --win --x64",
+    "build-portable": "electron-builder --win portable",
+    "clean": "rmdir /s dist",
+    "build:prod": "npm prune --production && electron-builder --win nsis --x64 && npm install"
+  },
+  "keywords": [],
+  "author": {
+    "name": "JAINAM SANGHAVI"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "electron-squirrel-startup": "^1.0.1",
+    "exifr": "^7.1.3",
+    "image-size": "^2.0.2",
+    "lowdb": "^6.1.0",
+    "tesseract.js": "^6.0.1"
+  },
+  "devDependencies": {
+    "@electron-forge/cli": "^7.8.1",
+    "@electron-forge/maker-deb": "^7.8.1",
+    "@electron-forge/maker-rpm": "^7.8.1",
+    "@electron-forge/maker-squirrel": "^7.8.1",
+    "@electron-forge/maker-zip": "^7.8.1",
+    "@electron-forge/plugin-auto-unpack-natives": "^7.8.1",
+    "@electron-forge/plugin-fuses": "^7.8.1",
+    "@electron/fuses": "^1.8.0",
+    "electron": "30.0.0",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "com.smartimagefinder.jainam",
+    "productName": "SmartImageFinder",
+    "files": [
+      "**/*"
+    ],
+    "npmRebuild": false,
+    "nodeGypRebuild": false,
+    "extraResources": [
+      {
+        "from": "python/",
+        "to": "python",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "assests/",
+        "to": "assests",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "models/",
+        "to": "models",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": "nsis",
+      "icon": "assests/icons/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "installerIcon": "assests/icons/icon.ico",
+      "uninstallerIcon": "assests/icons/icon.ico"
+    }
+  }
+}
