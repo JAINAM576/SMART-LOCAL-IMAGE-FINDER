@@ -1823,6 +1823,100 @@
   background: var(--accent-hover);
 }
 
+
+
+/* notification container  */
+/* Notification container (fixed position) */
+#notification-container {
+    position: fixed;
+    bottom: 80px; /* slightly above bottom */
+    right: 30px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 9999; /* overlay on everything */
+}
+
+/* Individual notification card */
+.notification {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-primary);
+    border-left: 4px solid var(--text-warning);
+    padding: 14px 16px;
+    width: 320px;
+    box-shadow: var(--shadow-medium);
+    border-radius: 6px;
+    color: var(--text-primary);
+    display: flex;
+    flex-direction: column;
+    animation: slideIn 0.3s ease forwards;
+    position: relative;
+}
+
+/* Header + Close button */
+.notification-header {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--text-warning);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.notification-close {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 16px;
+    cursor: pointer;
+    padding: 0;
+}
+.notification-close:hover {
+    color: var(--text-primary);
+}
+
+/* Content text */
+.notification-content {
+    font-size: 13px;
+    margin-bottom: 12px;
+    color: var(--text-secondary);
+}
+
+/* Resolve button */
+.notification-actions button {
+    background: var(--accent-primary);
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+}
+.notification-actions button:hover {
+    background: var(--accent-hover);
+}
+
+/* Slide-in animation */
+@keyframes slideIn {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* Fade-out animation */
+@keyframes slideOut {
+    to {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+}
+
             
         /* Responsive */
         @media (max-width: 768px) {

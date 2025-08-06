@@ -4,7 +4,7 @@ const { ipcRenderer } = require("electron");
 
 let allImages = [];
 let filteredImages = [];
-let foldersName=new Set();
+let foldersName = new Set();
 let favorites = new Set();
 let selectedImages = new Set();
 let currentSearchType = "caption";
@@ -174,13 +174,6 @@ function setupSearchHistoryListeners() {
     }
   });
 
-  // Hide dropdown on blur (with delay to allow clicks)
-  semanticInput.addEventListener("blur", () => {
-    setTimeout(() => {
-      hideSearchHistoryDropdown();
-    }, 150);
-  });
-
   // Show dropdown when clicking on input
   semanticInput.addEventListener("click", () => {
     if (searchHistory.length > 0) {
@@ -221,12 +214,12 @@ function setupSearchHistoryListeners() {
 }
 
 // Initialize app
-document.addEventListener("DOMContentLoaded", () => {
-  loadFavorites();
-  loadSearchHistory();
-  setupEventListeners();
-  loadExistingImages();
-});
+// document.addEventListener("DOMContentLoaded", () => {
+//   loadFavorites();
+//   loadSearchHistory();
+//   setupEventListeners();
+//   loadExistingImages();
+// });
 
 // Load favorites from storage
 function loadFavorites() {
@@ -276,11 +269,11 @@ function setupEventListeners() {
   // Toolbar buttons
   document
     .getElementById("addFolderBtn")
-    .addEventListener("click", ()=>selectNewFolder("folder"));
+    .addEventListener("click", () => selectNewFolder("folder"));
 
   document
     .getElementById("addFilesBtn")
-    .addEventListener("click", ()=>selectNewFolder("files"));
+    .addEventListener("click", () => selectNewFolder("files"));
   document
     .getElementById("refreshBtn")
     .addEventListener("click", refreshImages);
@@ -305,7 +298,7 @@ function setupEventListeners() {
   // Welcome screen buttons
   document
     .getElementById("welcomeAddFolder")
-    .addEventListener("click",()=> selectNewFolder("folder"));
+    .addEventListener("click", () => selectNewFolder("folder"));
   document
     .getElementById("welcomeSemanticSearch")
     .addEventListener("click", showSemanticSearch);
@@ -343,7 +336,7 @@ function setupEventListeners() {
   document
     .getElementById("fileTypeFilter")
     .addEventListener("change", applyFilters);
-     document
+  document
     .getElementById("foldernameselector")
     .addEventListener("change", applyFilters);
   document
@@ -500,10 +493,10 @@ function toggleFilterSection(header) {
   section.classList.toggle("collapsed");
 }
 
-document.getElementById("stopBtn").addEventListener("click",()=>{
-   ipcRenderer.send('process-stop');
-  console.log('Stop signal sent to main process');
-})
+document.getElementById("stopBtn").addEventListener("click", () => {
+  ipcRenderer.send("process-stop");
+  console.log("Stop signal sent to main process");
+});
 
 // Update search placeholder
 function updateSearchPlaceholder() {
@@ -515,67 +508,75 @@ function updateSearchPlaceholder() {
   input.placeholder = placeholders[currentSearchType];
 }
 
-// Select new folder
-async function selectNewFolder(type) {
-    const modal = document.getElementById("folderModal");
-    const input = document.getElementById("folderInput");
-    const datalist = document.getElementById("folderSuggestions");
+async function afterSelection(input, modal, type) {
+  const selectedFolder = input.value.trim();
+  modal.classList.add("hidden");
+  input.value = "";
+  if (selectedFolder) {
+    document.getElementById("data").innerText = "";
+    document.getElementById("processing").innerText = " Processing...";
+    try {
+      ipcRenderer.removeAllListeners("image-process");
+      ipcRenderer.removeAllListeners("image-process-step");
+      setStatus("Selecting folder...", "info");
+      showProcessing(true);
 
+      ipcRenderer.on("image-process", (error, processed, total) => {
+        document.getElementById("data").innerText = `${processed}/${total}`;
+      });
+      ipcRenderer.on("image-process-step", (error, msg) => {
+        console.log(msg, "msg");
+        document.getElementById("processing").innerText = msg;
+      });
 
-    datalist.innerHTML = ""; // clear old
-    foldersName.forEach(name => {
-        const option = document.createElement("option");
-        option.value = name;
-        datalist.appendChild(option);
-    });
+      const result = await ipcRenderer.invoke(
+        "select-and-process-folder",
+        type,
+        selectedFolder
+      );
 
-    modal.classList.remove("hidden");
-    input.value = "";
-    input.focus();
-
-    document.getElementById("folderOkBtn").onclick =async  () => {
-        const selectedFolder = input.value.trim();
-        modal.classList.add("hidden");
-        if(selectedFolder){
-         
-  try {
-    ipcRenderer.removeAllListeners("image-process");
-    setStatus("Selecting folder...", "info");
-    showProcessing(true);
-    // showLoadingOverlay("Processing folder...");
-    ipcRenderer.on("image-process", (error, processed, total) => {
-      document.getElementById("data").innerText = `${processed}/${total}`;
-    });
-
-    const result = await ipcRenderer.invoke("select-and-process-folder",type,selectedFolder);
-
-    if (result.success) {
-      setStatus(`Successfully processed ${result.count} images`, "success");
-      await loadExistingImages();
-      showSearchInterface();
-    } else {
-      setStatus("No folder selected", "warning");
-      showProcessing(false)
+      if (result.success) {
+        setStatus(`Successfully processed ${result.count} images`, "success");
+        await loadExistingImages();
+        showSearchInterface();
+      } else {
+        setStatus("No folder selected", "warning");
+        showProcessing(false);
+      }
+      document.getElementById("data").innerText = "";
+    } catch (error) {
+      setStatus("Error processing folder: " + error.message, "error");
+    } finally {
+      document.getElementById("data").innerText = "";
+      hideLoadingOverlay();
+      showProcessing(false);
     }
-    document.getElementById("data").innerText = "";
-  } catch (error) {
-    setStatus("Error processing folder: " + error.message, "error");
-  } finally {
-    document.getElementById("data").innerText = "";
-    hideLoadingOverlay();
-    showProcessing(false);
   }
-
-        }
-    };
-
-    document.getElementById("folderCancelBtn").onclick = () => {
-        modal.classList.add("hidden");
-    };
 }
 
+async function selectNewFolder(type) {
+  const modal = document.getElementById("folderModal");
+  const input = document.getElementById("folderInput");
+  const datalist = document.getElementById("folderSuggestions");
 
+  datalist.innerHTML = ""; // clear old
+  foldersName.forEach((name) => {
+    const option = document.createElement("option");
+    option.value = name;
+    datalist.appendChild(option);
+  });
 
+  modal.classList.remove("hidden");
+  input.value = "";
+  input.focus();
+
+  document.getElementById("folderOkBtn").onclick = () =>
+    afterSelection(input, modal, type);
+
+  document.getElementById("folderCancelBtn").onclick = () => {
+    modal.classList.add("hidden");
+  };
+}
 
 // Refresh images
 async function refreshImages() {
@@ -595,18 +596,39 @@ async function refreshImages() {
 
 async function loadExistingImages() {
   try {
+  
+    ipcRenderer.on("get-info", (error, needToLoad, needToLoadModules) => {
+     
+      if (needToLoad || needToLoadModules) {
+        document.getElementById("notification-container").innerHTML = "";
+      }
+      if (needToLoad ) {
+        showWarningNotification("Some Models Not Found", () => {
+          loadModelElement.click();
+       
+        });
+      }
+      if (needToLoadModules ) {
+        showWarningNotification("Some Modules Not Found", () => {
+          loadModuleElement.click();
+      
+        });
+      }
+    });
     allImages = await ipcRenderer.invoke("get-images-db");
     filteredImages = [...allImages];
-    filteredImages.forEach((img)=>{
+    foldersName = new Set();
+    filteredImages.forEach((img) => {
       foldersName.add(img.folder);
+    });
+    document.getElementById("foldernameselector").innerHTML =
+      '<option value="">All Types</option>';
+    Array.from(foldersName).forEach((name) => {
+      document.getElementById(
+        "foldernameselector"
+      ).innerHTML += `<option value=${name}>${name}</option>`;
+    });
 
-    })
-document.getElementById('foldernameselector').innerHTML='<option value="">All Types</option>';
-   Array.from(foldersName).forEach((name)=>{
-
-     document.getElementById('foldernameselector').innerHTML+=`<option value=${name}>${name}</option>`
-    }) 
-    
     updateImageCount();
 
     if (allImages.length > 0) {
@@ -741,8 +763,7 @@ function applyFilters() {
   const sizeOp = document.getElementById("sizeOp").value;
   const sizeVal = parseFloat(document.getElementById("sizeVal").value);
 
-
-  console.log(filteredImages,"in apply")
+  console.log(filteredImages, "in apply");
   // Start with current filtered images (from search results)
   let imagesToFilter = isSemanticSearch ? filteredImages : [...allImages];
 
@@ -771,7 +792,11 @@ function applyFilters() {
     ) {
       return false;
     }
-    if(folderName && image.folder && image.folder.toLowerCase() !== folderName.toLowerCase()){
+    if (
+      folderName &&
+      image.folder &&
+      image.folder.toLowerCase() !== folderName.toLowerCase()
+    ) {
       return false;
     }
 
@@ -853,8 +878,17 @@ function displayImages() {
   }
 
   grid.innerHTML = "";
+  const uniqueImages = [];
+  const seenPaths = new Set();
 
-  filteredImages.forEach((image, index) => {
+  for (const img of filteredImages) {
+    if (!seenPaths.has(img.path)) {
+      seenPaths.add(img.path);
+      uniqueImages.push(img);
+    }
+  }
+
+  uniqueImages.forEach((image, index) => {
     const card = document.createElement("div");
     card.className = `image-card ${currentView === "list" ? "list-view" : ""} ${
       isSemanticSearch ? "semantic-result" : ""
@@ -870,32 +904,23 @@ function displayImages() {
         : "Unknown";
 
     card.innerHTML = `
-                    <img src="file://${
-                      image.path
-                    }" alt="${fileName}" class="image-thumbnail" 
-                         onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjE1MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjM2MzYzNjIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJTZWdvZSBVSSIgZm9udC1zaXplPSIxMiIgZmlsbD0iIzk2OTY5NiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkltYWdlIG5vdCBmb3VuZDwvdGV4dD48L3N2Zz4='">
-                    ${
-                      isFavorite
-                        ? '<div class="favorite-indicator"><i class="bi bi-heart-fill"></i></div>'
-                        : ""
-                    }
-                    ${
-                      isSemanticSearch
-                        ? '<div class="semantic-indicator">AI</div>'
-                        : ""
-                    }
-                    <div class="image-info">
-                        <div class="image-name" title="${fileName}">${fileName}</div>
-                        <div class="image-meta">
-                            <span>${image.width || 0}×${
-      image.height || 0
-    }</span>
-                            <span>${fileSize}</span>
-                        </div>
-                    </div>
-                `;
+    <img src="file://${image.path}" alt="${fileName}" class="image-thumbnail" 
+         onerror="this.src='data:image/svg+xml;base64,...'">
+    ${
+      isFavorite
+        ? '<div class="favorite-indicator"><i class="bi bi-heart-fill"></i></div>'
+        : ""
+    }
+    ${isSemanticSearch ? '<div class="semantic-indicator">AI</div>' : ""}
+    <div class="image-info">
+        <div class="image-name" title="${fileName}">${fileName}</div>
+        <div class="image-meta">
+            <span>${image.width || 0}×${image.height || 0}</span>
+            <span>${fileSize}</span>
+        </div>
+    </div>
+  `;
 
-    // Add click handler
     card.addEventListener("click", (e) => {
       if (e.ctrlKey || e.metaKey) {
         toggleSelection(card);
@@ -905,10 +930,7 @@ function displayImages() {
       }
     });
 
-    // Add double-click handler to show details
-    card.addEventListener("dblclick", () => {
-      showImageDetails(image);
-    });
+    card.addEventListener("dblclick", () => showImageDetails(image));
 
     grid.appendChild(card);
   });
@@ -1164,14 +1186,16 @@ function showInExplorer() {
 
 async function deleteImage() {
   if (!contextMenuTarget) return;
-console.log(selectedImages,"selected");
+  console.log(selectedImages, "selected");
   const path = contextMenuTarget.dataset.path;
- showProcessing(true);
+  showProcessing(true);
   if (confirm("Are you sure you want to delete this image?")) {
-    
-       await ipcRenderer.invoke("remove-image-from-db",Array.from(selectedImages));
-     
-      showProcessing(false);
+    await ipcRenderer.invoke(
+      "remove-image-from-db",
+      Array.from(selectedImages)
+    );
+
+    showProcessing(false);
     setStatus("Image Deleted Successfully ", "warning");
   }
   hideContextMenu();
@@ -1355,6 +1379,45 @@ function updateModelName(name) {
   modelName.textContent = `Model: ${name}`;
 }
 
+function showWarningNotification(message, onResolve) {
+  const container = document.getElementById("notification-container");
+
+  // Create notification
+  const notification = document.createElement("div");
+  notification.className = "notification";
+
+  notification.innerHTML = `
+        <div class="notification-header">
+            <span>Warning</span>
+            <button class="notification-close">&times;</button>
+        </div>
+        <div class="notification-content">${message}</div>
+        <div class="notification-actions">
+            <button class="resolve-btn">Resolve</button>
+        </div>
+    `;
+
+  // Close button
+  notification
+    .querySelector(".notification-close")
+    .addEventListener("click", () => {
+      hideNotification(notification);
+    });
+
+  // Resolve button
+  notification.querySelector(".resolve-btn").addEventListener("click", () => {
+    if (typeof onResolve === "function") onResolve();
+    hideNotification(notification);
+  });
+
+  container.appendChild(notification);
+}
+
+function hideNotification(notification) {
+  notification.style.animation = "slideOut 0.3s ease forwards";
+  setTimeout(() => notification.remove(), 300);
+}
+
 async function load_model(force) {
   try {
     showLoader();
@@ -1384,12 +1447,11 @@ async function load_model(force) {
 
     ipcRenderer.on("model-download-complete", (event, result) => {
       downloadCompleted = true;
-        showSuccessState();
-  
+      showSuccessState();
     });
 
     // Start the download - but don't immediately handle the result
-    const resultPromise = ipcRenderer.invoke('load-model',force);
+    const resultPromise = ipcRenderer.invoke("load-model", force);
 
     // Wait a bit to see if progress events start coming
     await new Promise((resolve) => setTimeout(resolve, 5000));
@@ -1401,8 +1463,7 @@ async function load_model(force) {
         console.log("Immediate result:", result);
 
         if (result && result.success !== false) {
-            showSuccessState();
-       
+          showSuccessState();
         } else {
           throw new Error(
             result?.error || "Model loading failed - no progress detected"
@@ -1421,9 +1482,7 @@ async function load_model(force) {
         // Only show success if we haven't already handled completion
         if (!downloadCompleted) {
           if (result && result.success !== false) {
-        
-              showSuccessState();
-          
+            showSuccessState();
           } else {
             throw new Error(
               result?.error || "Model loading failed after progress"
@@ -1444,16 +1503,15 @@ async function load_model(force) {
   }
 }
 async function handleRetry(currenteventname) {
-  if(currenteventname=="load-model"){
-
+  if (currenteventname == "load-model") {
     await load_model();
-  }else{
+  } else {
     await load_module();
   }
 }
 // Event listeners
-retryBtn.removeEventListener("click",async ()=> handleRetry("load-model"));
-retryBtn.addEventListener("click",async ()=> handleRetry("load-model"));
+retryBtn.removeEventListener("click", async () => handleRetry("load-model"));
+retryBtn.addEventListener("click", async () => handleRetry("load-model"));
 
 closeBtn.addEventListener("click", () => {
   hideLoader();
@@ -1518,8 +1576,10 @@ async function load_module(force) {
 
   ipcRenderer.on("module-download-error", (event, error) => {
     closeTerminal();
-    retryBtn.removeEventListener("click",async ()=> handleRetry("load-module"));
-    retryBtn.addEventListener("click",async()=> handleRetry("load-module"));
+    retryBtn.removeEventListener("click", async () =>
+      handleRetry("load-module")
+    );
+    retryBtn.addEventListener("click", async () => handleRetry("load-module"));
     showErrorState(error);
   });
 
@@ -1529,31 +1589,28 @@ async function load_module(force) {
     closeTerminal();
   });
 
-  const resultPromise = ipcRenderer.invoke("load-module",force);
+  const resultPromise = ipcRenderer.invoke("load-module", force);
   const result = await resultPromise;
   console.log("Immediate result:", result);
 }
 
-
 // TO FORCEFULLY DOWNLOAD MODEL AND MODULES
 
-let loadModelElement=document.getElementById("loadModel");
-let loadModuleElement=document.getElementById("loadModule");
+let loadModelElement = document.getElementById("loadModel");
+let loadModuleElement = document.getElementById("loadModule");
 
-loadModelElement.addEventListener("change",async (e)=>{
-  if(loadModelElement.checked){
-await load_model(true)
+loadModelElement.addEventListener("change", async (e) => {
+  if (loadModelElement.checked) {
+    await load_model(true);
   }
-  loadModelElement.checked=false;
-})
-loadModuleElement.addEventListener("change",async (e)=>{
-  if(loadModuleElement.checked){
-await load_module(true)
+  loadModelElement.checked = false;
+});
+loadModuleElement.addEventListener("change", async (e) => {
+  if (loadModuleElement.checked) {
+    await load_module(true);
   }
-  loadModuleElement.checked=false;
-
-})
-
+  loadModuleElement.checked = false;
+});
 
 async function loadAllModelsInSequence() {
   try {
@@ -1564,6 +1621,12 @@ async function loadAllModelsInSequence() {
     console.log("DONE");
   } catch (error) {
     console.error("Error while loading models:", error);
+  }
+  finally {
+      loadFavorites();
+  loadSearchHistory();
+  setupEventListeners();
+  loadExistingImages();
   }
 }
 

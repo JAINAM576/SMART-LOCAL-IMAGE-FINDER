@@ -13,7 +13,7 @@ const HASH_DB_PATH = app.isPackaged
   : path.join(__dirname, 'assests', 'processed_hashes.json');     
 
 let pythonScriptPath;
-
+let lastCheck=false;
 if (app.isPackaged) {
   pythonScriptPath = path.join(
     process.resourcesPath,
@@ -122,7 +122,7 @@ const adapter = new JSONFile(imagesDbPath);
     await checkModule.read();
 
  
-    if(Object.keys(checkModule.data).length>=9){
+    if((Object.keys(checkModule.data).length)>=9){
         needToLoadModules=false;
     }
 
@@ -220,6 +220,7 @@ function getImageUniqueId(fileBuffer) {
 
 // NEW: Combined select and process folder handler
 ipcMain.handle("select-and-process-folder", async (event,type,selectedFolder) => {
+
   let properties=type=="folder"?["openDirectory"]:["openFile", "multiSelections"]
   try {
     const result = await dialog.showOpenDialog({
@@ -266,6 +267,7 @@ ipcMain.handle("select-and-process-folder", async (event,type,selectedFolder) =>
       shouldStop = true;
     });
 
+    event.sender.send("image-process-step", "Processing...");
     for (const imagePath of imagePaths) {
       if (shouldStop) {
         console.log("Processing stopped.");
@@ -284,7 +286,7 @@ ipcMain.handle("select-and-process-folder", async (event,type,selectedFolder) =>
           continue;
         }
 
-        await processImage(imagePath, buffer, hex, hashDB,selectedFolder);
+        await processImage(imagePath, buffer, hex, hashDB,selectedFolder,event.sender);
         processedCount++;
         event.sender.send("image-process", processedCount + 1, imagePaths.length);
 
@@ -304,7 +306,7 @@ ipcMain.handle("select-and-process-folder", async (event,type,selectedFolder) =>
 });
 
 // UPDATED: Refactored image processing into separate function
-async function processImage(imagePath, buffer, hex, hashDB,selectedFolder) {
+async function processImage(imagePath, buffer, hex, hashDB,selectedFolder,event) {
   try {
     // Get basic info
     const dimensions = sizeOf.imageSize(buffer);
@@ -319,6 +321,7 @@ async function processImage(imagePath, buffer, hex, hashDB,selectedFolder) {
       FileType: fileType,
     };
 
+     event.send("image-process-step", "Processing Image Data");
     // Get EXIF data
     try {
       const exifData = await exifr.parse(imagePath);
@@ -334,6 +337,7 @@ async function processImage(imagePath, buffer, hex, hashDB,selectedFolder) {
     }
 
     // OCR processing
+    event.send("image-process-step", "Processing Ocr Extraction");
     let ocrText = "";
     try {
       const result = await Tesseract.recognize(imagePath, "eng");
@@ -343,6 +347,7 @@ async function processImage(imagePath, buffer, hex, hashDB,selectedFolder) {
     }
 
     // Get AI caption
+    event.send("image-process-step", "Processing Captioning");
     let caption = "No caption generated";
     try {
       const scriptPath = returnPath("main.py");
@@ -356,6 +361,7 @@ async function processImage(imagePath, buffer, hex, hashDB,selectedFolder) {
     }
 
     // Save to database
+    event.send("image-process-step", "Saving To Db");
     await db.read();
 
     if (!db.data) {
@@ -498,7 +504,16 @@ function parseCaption(output) {
   }
 }
 
-ipcMain.handle("get-images-db", async () => {
+ipcMain.handle("get-images-db", async (event) => {
+  if(lastCheck){
+    await checkModelsSize();
+    await checkModulesSize();
+
+    event.sender.send("get-info",needToLoad,needToLoadModules);
+   
+    
+    lastCheck=false;
+  }
   try {
     await db.read();
 
@@ -714,6 +729,7 @@ ipcMain.handle("check-folder-tracking", async (event, folderPath) => {
 //load model initially
 ipcMain.handle("load-model", async (event, force) => {
   console.log("STARTS", needToLoad, force);
+  lastCheck=true;
   const scriptPath = returnPath("loadmodelinitially.py");
 
   try {
@@ -781,6 +797,7 @@ ipcMain.handle("load-model", async (event, force) => {
 //load model initially
 ipcMain.handle("load-module", async (event,force) => {
   console.log("STARTS",needToLoadModules,force);
+  lastCheck=true;
 
   // process.resourcesPath
   const scriptPath = returnPath("loadModules.py");

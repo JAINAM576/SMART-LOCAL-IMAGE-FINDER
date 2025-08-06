@@ -11,7 +11,7 @@
     "dist": "electron-builder --win --x64",
     "build-portable": "electron-builder --win portable",
     "clean": "rmdir /s dist",
-    "build:prod": "npm prune --production && electron-builder --win nsis --x64 && npm install"
+    "build:prod": "npm prune --production && electron-builder --win zip --x64 && npm install"
   },
   "keywords": [],
   "author": {
